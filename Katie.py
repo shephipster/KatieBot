@@ -20,6 +20,7 @@ from Cogs.Activities import Activities
 from Cogs.Tags import Tags
 from Cogs.Notifications import Notifications
 from Cogs.Posts import Posts
+from Cogs.Games import Games
 
 
 # Web services
@@ -65,6 +66,7 @@ async def setup(bot):
     await bot.add_cog(Activities(bot))
     await bot.add_cog(Tags(bot))
     await bot.add_cog(Posts(bot))
+    await bot.add_cog(Games(bot))
     Database.init()
     
     if not os.path.exists(logFile):
