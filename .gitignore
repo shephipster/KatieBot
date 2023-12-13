@@ -3,3 +3,5 @@
 *.pyc
 *.json
 .env
+BotFiles%5CKatie_Bot.db
+BotFiles/Katie_Bot.db

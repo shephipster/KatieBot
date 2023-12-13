@@ -49,6 +49,13 @@ repostDistance = 10  # how similar an image must be to be a repost. Smaller mean
 EMBED_FIX_PREFIX = 'kira'
 logFile = 'BotFiles/image_log.json'
 logSizeLimit = 255
+last_command_caller = None
+
+bonus_reactions = {
+    'misaka_mikoto': str('⚡'),
+    'dullahan': str('🎃'),
+    'burger': str('🍔')
+}
 
 # Declare Bot
 bot = commands.Bot(
@@ -99,13 +106,15 @@ async def on_message(message):
         # This causes bot to by-pass the repost filter. Do we care? I don't, and who would notice
         return
 
-    if "fuck you" in message.content.lower():
-        if "kira" in message.content.lower():
-            await channel.send("fuck me yourself, coward")
-        else:
-            await channel.send("fuck them yourself, coward")
-    elif "fuck me" in message.content.lower():
-        await channel.send("that's kinda gross dude")
+    # if "fuck you" in message.content.lower():
+    #     if "kira" in message.content.lower():
+    #         await channel.send("fuck me yourself, coward")
+    #     else:
+    #         await channel.send("fuck them yourself, coward")
+    # elif "fuck me" in message.content.lower():
+    #     await channel.send("that's kinda gross dude")
+    # elif "kira" in message.content.lower() and ('sucks' in message.content.lower() or 'blows' in message.content.lower()):
+    #     await channel.send("Like you're one to talk <:haremonPout:616919335801454595>")
 
     if not message.content or message.content[0] != '+':
         if message.attachments:
@@ -117,8 +126,12 @@ async def on_message(message):
                     tag_list = list(data['tags'])
                     tag_list.sort()
                     await Notifications.ping_people(message, tag_list, exempt_user=message.author)
+                    
+                    for tag in bonus_reactions.keys():
+                        if tag in tag_list:
+                            await message.add_reaction(bonus_reactions[tag])
                     # response = 'Tags for that are `' + '`,`'.join(tag_list) + '`'
-                    # await channel.send(response)visua
+                    # await channel.send(response)
 
                     if repostDetected(message.channel.guild, attachment.url):
                         await message.add_reaction(str('♻️'))
@@ -128,11 +141,12 @@ async def on_message(message):
                 data = await IQDBService.getInfoUrl(imageLink)
                 if data != None:
                     tag_list = data['tags']
-                    await Notifications.ping_people(message, tag_list)
+                    await Notifications.ping_people(message, tag_list, exempt_user=last_command_caller)
                     if repostDetected(message.channel.guild, imageLink):
                         await message.add_reaction(str('♻️'))
-
+    last_command_caller = message.author
     await bot.process_commands(message)
+
     
 @bot.event
 async def on_message_edit(before, after):

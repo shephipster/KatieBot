@@ -15,7 +15,7 @@ TWITTER_URL = "https://api.twitter.com/2/tweets/{}"
 BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
 
 def create_headers(bearer_token = BEARER_TOKEN):
-    headers = {'Authorization': 'Bearer {}'.format(bearer_token)}
+    headers = {'Authorization': 'Basic {}'.format(bearer_token)}
     return headers
 
 def create_url(id):

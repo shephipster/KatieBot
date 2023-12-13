@@ -24,6 +24,8 @@ class Posts(commands.Cog):
 
     @commands.command(aliases=['randomimage','rollimage'])
     async def randomPost(self, ctx, *tags):
+        # from SQL.Database import addLikedTag
+        from SQL.Database import getBlacklist
         
         """Fetches a random post from multiple sites that contains the provided tag(s) and then displays it in a custom embed.
 
@@ -46,7 +48,7 @@ class Posts(commands.Cog):
             
             data = {
                 guid : {
-                    'bannedExplicitTags' : ['loli', 'shota'],   #TODO: Get guild banned porn tags
+                    'bannedExplicitTags' : ['loli', 'shota', 'bestiality', 'ugly_bastard'],   #TODO: Get guild banned porn tags
                     'bannedGeneralTags' : [''], #TODO: get guild banned tags
                     'channels':{
                         cid: {
@@ -74,6 +76,9 @@ class Posts(commands.Cog):
                 
             safe_exemptions = data[guid]['channels'][cid]['safe_exemptions']
             nsfw_exemptions = data[guid]['channels'][cid]['nsfw_exemptions']
+            
+            for tags in getBlacklist(user_id = ctx.author.id, guild_id=guid):
+                bannedTags.append(tag)
         
             rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
                                                     safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw() )
@@ -82,7 +87,7 @@ class Posts(commands.Cog):
                                                     safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=True )
 
         if rolled_data == None:
-            await orig_msg.edit('Sorry, I couldn\'t find anything with those tags.')
+            await ctx.reply("Sorry, couldn't find anything for you. Did you spell everything right?")
             return
 
         sources = rolled_data['sources']
@@ -115,7 +120,7 @@ class Posts(commands.Cog):
         embed_msg = await ctx.reply(embed=embed_obj)
         await embed_msg.add_reaction(str('♥'))
 
-        await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title)
+        await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title, original_caller=ctx.message.author)
         await asyncio.sleep(30)
         
         embed_msg = await embed_msg.fetch()
@@ -123,13 +128,17 @@ class Posts(commands.Cog):
         for reaction in embed_msg.reactions:
             if reaction.count > 1 or not reaction.me:
                 delete = False
+                # asyncio.sleep(30)
+                # async for user in reaction.users():
+                #     for tag in tag_list:
+                #         addLikedTag(user.user_id, guild_id=guid, tag=tag)
                 
         if delete:
             await embed_msg.delete()
-        return 1
+            return 1
     
     #Blocking calls
-    async def updateRolledImage(self, ctx, sources:list, embed_msg, image_url, tag_list, isExplicit, title=None):
+    async def updateRolledImage(self, ctx, sources:list, embed_msg, image_url, tag_list, isExplicit, title=None, original_caller=None):
         extra_data = await IQDBService.getInfoUrl(image_url)
         bot_image = self.bot.user.avatar.url
         if extra_data != None:
@@ -146,7 +155,9 @@ class Posts(commands.Cog):
         if title != '' and title != None:
             description = "Title: " + title + '\n' + '\n'.join(sources)
         else:
-            description = '\n'.join(sources)
+            # description = '\n'.join(sources)
+            # was requested to make it tags instead
+            description = ', '.join(f'`{tag}`' for tag in tag_list)
 
         #update embed
 
@@ -161,12 +172,11 @@ class Posts(commands.Cog):
             pass
         else:
             embed_msg = await embed_msg.edit(embed=embed_obj)
-    
-        await ping_people(ctx, tag_list, exempt_user = ctx.message.author)
+        await ping_people(ctx, tag_list, exempt_user = original_caller)
 
         return embed_msg
     
-    @commands.command(pass_context=True, aliases=['randomporn', 'randomexplicit', 'rollporn'], nsfw=True)
+    @commands.command(pass_context=True, aliases=['randomporn', 'randomexplicit', 'rollporn', 'nsfw'], nsfw=True)
     async def randomNsfw(self, ctx, *tags):
        if not ctx.channel.is_nsfw():
            await ctx.channel.send("Sorry, I can't roll NSFW in a channel that's not age-restricted. Try randomPost or randomSafe instead.")
@@ -174,7 +184,7 @@ class Posts(commands.Cog):
        await ctx.invoke(self.bot.get_command('randomPost'), 'rating:explicit', *tags)
 
     
-    @commands.command(pass_context=True, aliases=['randomsafe', 'rollsafe'])
+    @commands.command(pass_context=True, aliases=['randomsafe', 'rollsafe', 'sfw'])
     async def randomSfw(self, ctx, *tags):
         await ctx.invoke(self.bot.get_command('randomPost'), 'rating:general', *tags)
 
@@ -217,8 +227,6 @@ class Posts(commands.Cog):
                 randomGelSet = randomGelSet['post']
                 
             if 'success' in randomDanSet and randomDanSet['success'] == False:
-                print("Failed to log into Danbooru")
-                print(randomDanSet)
                 randomDanSet = []
             
             full_set = []
@@ -327,6 +335,8 @@ async def ping_people(message: discord.Message, tag_list, exempt_user=None):
     # go through each user in the current channel
     users = message.channel.members
     for user in users:
+        if user == exempt_user:
+            continue
         # fetch their tags
         blacklist = []
         whitelist = []

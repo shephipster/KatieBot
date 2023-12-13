@@ -77,7 +77,11 @@ def removeBlacklistFromUser(tag:str, ctx:discord.Message):
 def getBlacklist(user_id, guild_id):
     utm = User_Tag_Mappings()
     results = utm.search(user_id = user_id, guild_id = guild_id, blacklist = True)
-    return results
+    tags = []
+    for result in results:
+        tags.append(result[3])
+    tags.sort()
+    return tags
 
 def getTags(user_id, guild_id):
     utm = User_Tag_Mappings()
@@ -99,6 +103,14 @@ def getAllTags(user_id, guild_id):
     tags.sort()
     return tags  
 
+def addLikedTag(user_id, guild_id, tag):
+    utm = User_Likes()
+    results = utm.search(user_id = user_id, guild_id = guild_id, tag = tag)
+    
+    if results:
+        pass
+    save()
+
 def save():
     Connection.connection.commit()
     
@@ -119,4 +131,7 @@ def init():
     entity.createTable()
     
     entity = Models.User_Channel_Mappings()
+    entity.createTable()
+    
+    entity = Models.User_Likes()
     entity.createTable()

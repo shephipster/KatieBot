@@ -10,6 +10,8 @@ class Notifications(commands.Cog):
         # go through each user in the current channel
         users = message.channel.members
         for user in users:
+            if user == exempt_user:
+                continue
             # fetch their tags
             blacklist = []
             whitelist = []
@@ -24,9 +26,10 @@ class Notifications(commands.Cog):
             if not tag_list:
                 return
 
-            if bool(set(tag_list) & set(blacklist)):
-                #blacklisted tag, don't ping them
-                continue
+            # Not the most efficient method, but given the small usage of the bot optimization can wait
+            for tag in tag_list:
+                if tag in blacklist:
+                    continue
             
             for tag in tag_list:
                 if tag in whitelist:

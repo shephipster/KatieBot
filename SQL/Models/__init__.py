@@ -5,3 +5,4 @@ from .User_Guild_Mappings import User_Guild_Mappings
 from .User_Tag_Mappings import User_Tag_Mappings
 from .User_Channel_Mappings import User_Channel_Mappings
 from .Users import Users
+from .User_Likes import User_Likes
