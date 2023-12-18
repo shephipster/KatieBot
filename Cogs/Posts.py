@@ -113,7 +113,7 @@ class Posts(commands.Cog):
             description=description,
             type="rich",
         )
-        embed_obj.set_author(name="Katie Bot", icon_url=bot_image)
+        embed_obj.set_author(name="Kira Bot", icon_url=bot_image)
         embed_obj.set_image(url=image_url)
 
         await orig_msg.delete()
