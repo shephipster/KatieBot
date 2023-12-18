@@ -7,6 +7,7 @@ from discord.ext import commands
 from Services import IQDBService
 from Services.GelbooruService import getRandomSetWithTags as gelSet
 from Services.DanbooruService import getRandomSetWithTags as danSet
+from threading import Timer, Thread
 from SQL import Database
 import asyncio
 
@@ -39,8 +40,15 @@ class Posts(commands.Cog):
         bannedPorn = []
         
         cleaned_tags = []
+        rolled_data_set = []
+        combo_count = 1
         for tag in tags:
-            cleaned_tags.append(tag.replace('`', ''))
+            multiplier = re.search(r'(x\d+|\d+x)', tag)
+            if multiplier:
+                combo_count = int(re.search(r'\d+', multiplier[0])[0])
+            else:
+                cleaned_tags.append(tag.replace('`', ''))
+            
         
         if ctx.guild != None:   #originated from a guild, fetch the lists and exemptions
             guid = str(ctx.guild.id)
@@ -80,16 +88,27 @@ class Posts(commands.Cog):
             for tags in getBlacklist(user_id = ctx.author.id, guild_id=guid):
                 bannedTags.append(tag)
         
-            rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
-                                                    safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw() )
+            for i in range(combo_count):
+                rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
+                                                        safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw() )
+                rolled_data_set.append(rolled_data)
         else:   #from inside a dm. We'll assume they're fine with it
-            rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
+            for i in range(combo_count):
+                rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
                                                     safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=True )
+                rolled_data_set.append(rolled_data)
 
-        if rolled_data == None:
+        if rolled_data_set == []:
             await ctx.reply("Sorry, couldn't find anything for you. Did you spell everything right?")
             return
 
+        await orig_msg.delete()
+        tasks = []
+        for rolled_data in rolled_data_set:
+            tasks.append(self.send_post(rolled_data, ctx))
+        await asyncio.gather(*tasks) 
+    
+    async def send_post(self, rolled_data, ctx):
         sources = rolled_data['sources']
         image_url = rolled_data['image_url']
         tag_list = rolled_data['tag_list']
@@ -106,7 +125,6 @@ class Posts(commands.Cog):
         #await ctx.channel.send("Alright, here's your random post. Don't blame me if it's cursed.")
         if image_url.endswith('.mp4'):
             embed_msg = await ctx.channel.send(image_url)
-            return 1
 
         embed_obj = discord.Embed(
             colour=discord.Colour(0x5f4396),
@@ -116,27 +134,26 @@ class Posts(commands.Cog):
         embed_obj.set_author(name="Kira Bot", icon_url=bot_image)
         embed_obj.set_image(url=image_url)
 
-        await orig_msg.delete()
+        
         embed_msg = await ctx.reply(embed=embed_obj)
         await embed_msg.add_reaction(str('♥'))
 
-        await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title, original_caller=ctx.message.author)
+        await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title, original_caller=ctx.message.author)        
         await asyncio.sleep(30)
+        await self.delete_without_reactions(embed_msg)
         
         embed_msg = await embed_msg.fetch()
+        
+    
+    async def delete_without_reactions(self, msg):
+        embed_msg = await msg.fetch()
         delete = True
         for reaction in embed_msg.reactions:
             if reaction.count > 1 or not reaction.me:
-                delete = False
-                # asyncio.sleep(30)
-                # async for user in reaction.users():
-                #     for tag in tag_list:
-                #         addLikedTag(user.user_id, guild_id=guid, tag=tag)
-                
+                delete = False                
         if delete:
             await embed_msg.delete()
-            return 1
-    
+            
     #Blocking calls
     async def updateRolledImage(self, ctx, sources:list, embed_msg, image_url, tag_list, isExplicit, title=None, original_caller=None):
         extra_data = await IQDBService.getInfoUrl(image_url)
