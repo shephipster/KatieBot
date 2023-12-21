@@ -87,15 +87,23 @@ def checkMD5(md5):
         return md5
 
 async def getRandomSetWithTags(*tags):
-    tagList = ""
+    return await getSetWithTags('random', *tags)
+
+async def getSetWithTags(order='random', *tags):
+    from re import search
+    limit = 500
+    tag_list = []
     for tag in tags[0]:
-        tagList += tag + " "
-    tagList = tagList[:-1]
-    url = "http://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=9999&tags=" + tagList + "&random"
+        if search('limit:\d+', tag):
+            limit = int(search(r'\d+', tag)[0])
+        else:
+            tag_list.append(tag)
+    
+    tagList = '%20'.join(tag_list)
+    url = f"http://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={limit}&tags=" + tagList + "&" + order
     async with aiohttp.ClientSession() as session:
         async with session.get(url, ssl=False) as r:
             return await r.json()
-
 
 async def getRandomPostWithTags(*tags):
     respJson = await getRandomSetWithTags(*tags)

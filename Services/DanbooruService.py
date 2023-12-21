@@ -42,20 +42,28 @@ def getTagsFromUrl(url):
     return
 
 async def getRandomSetWithTags(*tags):
+    return await getSetWithTags('random', list(*tags))
+
+async def getSetWithTags(sorting='random', *tags):
+    from re import search
     # login_results = await validateLogin()
     # print(login_results)
-    tagList = ""
+    limit = 500
+    tag_list = []
     for tag in tags[0]:
-        tagList += tag + " "
+        if search('limit:\d+', tag):
+            limit = int(search(r'\d+', tag)[0])
+        else:
+            tag_list.append(tag)
+    
+    tagList = '%20'.join(tag_list)
 
-    tagList = tagList[:-1]
-    url = "" + DANBOORU_URL + f"/posts.json?&tags=" + tagList + f"+random%3A500&api_key={API_KEY}&login={USERNAME}"
+    url = "" + DANBOORU_URL + f"/posts.json?&tags=order:{sorting}%20" + tagList + f"&limit={limit}&api_key={API_KEY}&login={USERNAME}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as r:
             json_load = await r.json()
             r.close()
             return json_load
-
 
 async def getRandomPostWithTags(*tags):    
     respJson = await getRandomSetWithTags(*tags)

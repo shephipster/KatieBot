@@ -5,8 +5,8 @@ import discord
 from discord.ext import commands
 # from .Notifications import ping_people #Caused import issues. Not ideal, but just copying the method
 from Services import IQDBService
-from Services.GelbooruService import getRandomSetWithTags as gelSet
-from Services.DanbooruService import getRandomSetWithTags as danSet
+from Services.GelbooruService import getSetWithTags as gelSet
+from Services.DanbooruService import getSetWithTags as danSet
 from threading import Timer, Thread
 from SQL import Database
 import asyncio
@@ -90,12 +90,12 @@ class Posts(commands.Cog):
         
             for i in range(combo_count):
                 rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
-                                                        safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw() )
+                                                        safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw(), style='random' )
                 rolled_data_set.append(rolled_data)
         else:   #from inside a dm. We'll assume they're fine with it
             for i in range(combo_count):
                 rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
-                                                    safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=True )
+                                                    safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=True, style='random' )
                 rolled_data_set.append(rolled_data)
 
         if rolled_data_set == []:
@@ -227,7 +227,92 @@ class Posts(commands.Cog):
         except:
             return tags
     
-    async def getImageFromTags(self, banned_tags:list, banned_porn:list, query_set:list, safe_exemptions:list, nsfw_exemptions:list, channel_explicit:bool):
+    @commands.command()
+    async def top(self, ctx, pool_size, *tags):
+        # from SQL.Database import addLikedTag
+        from SQL.Database import getBlacklist
+        
+        """Fetches a random post from multiple sites that contains the provided tag(s) and then displays it in a custom embed.
+
+        Args:
+            ctx (_type_): Context of the message, passed in automatically by discord.
+        """
+        orig_msg = await ctx.reply("Alright, gimme a second to find something for you...", mention_author=False)
+        safe_exemptions = []
+        nsfw_exemptions = []
+        bannedTags = []
+        bannedPorn = []
+        
+        cleaned_tags = []
+        rolled_data_set = []
+        combo_count = 1
+        for tag in tags:
+            multiplier = re.search(r'(x\d+|\d+x)', tag)
+            if multiplier:
+                combo_count = int(re.search(r'\d+', multiplier[0])[0])
+            else:
+                cleaned_tags.append(tag.replace('`', ''))
+            
+        cleaned_tags.append(f'limit:{pool_size}')
+        if ctx.guild != None:   #originated from a guild, fetch the lists and exemptions
+            guid = str(ctx.guild.id)
+            cid = str(ctx.channel.id)
+            
+            data = {
+                guid : {
+                    'bannedExplicitTags' : ['loli', 'shota', 'bestiality', 'ugly_bastard'],   #TODO: Get guild banned porn tags
+                    'bannedGeneralTags' : [''], #TODO: get guild banned tags
+                    'channels':{
+                        cid: {
+                            'bannedTags' : [], #channel-specific blacklist
+                            'bannedNSFWTags': [],
+                            'safe_exemptions': [],
+                            'nsfw_exemptions': [],
+                        }
+                    }
+                }
+            }
+            # user, data = await processUser(ctx, guid=ctx.guild.id, uid=ctx.author.id)
+            # if user == None or data == None:
+            #     #there was an issue, break
+            #     return -1   
+
+            for tag in data[guid]['bannedExplicitTags']:
+                bannedPorn.append(tag)
+            for tag in data[guid]['bannedGeneralTags']:
+                bannedTags.append(tag)
+            for tag in data[guid]['channels'][cid]['bannedTags']:
+                bannedTags.append(tag)
+            for tag in data[guid]['channels'][cid]['bannedNSFWTags']:
+                bannedPorn.append(tag)
+                
+            safe_exemptions = data[guid]['channels'][cid]['safe_exemptions']
+            nsfw_exemptions = data[guid]['channels'][cid]['nsfw_exemptions']
+            
+            for tags in getBlacklist(user_id = ctx.author.id, guild_id=guid):
+                bannedTags.append(tag)
+        
+            for i in range(combo_count):
+                rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
+                                                        safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=ctx.channel.is_nsfw(), style='top' )
+                rolled_data_set.append(rolled_data)
+        else:   #from inside a dm. We'll assume they're fine with it
+            for i in range(combo_count):
+                rolled_data = await self.getImageFromTags(banned_tags=bannedTags, banned_porn=bannedPorn, query_set=cleaned_tags,
+                                                    safe_exemptions=safe_exemptions, nsfw_exemptions=nsfw_exemptions, channel_explicit=True, style='top' )
+                rolled_data_set.append(rolled_data)
+
+        if rolled_data_set == []:
+            await ctx.reply("Sorry, couldn't find anything for you. Did you spell everything right?")
+            return
+
+        await orig_msg.delete()
+        tasks = []
+        for rolled_data in rolled_data_set:
+            tasks.append(self.send_post(rolled_data, ctx))
+        await asyncio.gather(*tasks) 
+    
+    async def getImageFromTags(self, banned_tags:list, banned_porn:list, query_set:list, safe_exemptions:list, nsfw_exemptions:list, channel_explicit:bool, style='random'):
         #TODO: overhaul the randompost to call this
         
         data = {
@@ -240,8 +325,8 @@ class Posts(commands.Cog):
         
         search_set = self.mistakenTagSearcher(query_set)
         for entry in search_set:
-            randomDanSet = await danSet(entry)
-            randomGelSet = await gelSet(entry)
+            randomDanSet = await danSet(style, entry)
+            randomGelSet = await gelSet(style, entry)
 
             if 'post' in randomGelSet:
                 randomGelSet = randomGelSet['post']
