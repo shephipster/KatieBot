@@ -75,7 +75,7 @@ async def setup(bot):
     await bot.add_cog(Posts(bot))
     await bot.add_cog(Games(bot))
     Database.init()
-    
+        
     if not os.path.exists(logFile):
         with open(logFile, 'a') as file:
             file.write("{\n}")
@@ -118,18 +118,20 @@ async def on_message(message):
 
     if not message.content or message.content[0] != '+':
         if message.attachments:
+            all_tags = set()
             for attachment in message.attachments:
                 file = await attachment.to_file()
                 file = file.fp
                 data = await IQDBService.getInfoDiscordFile(file)
                 if data != None and not 'error' in data:
                     tag_list = list(data['tags'])
-                    tag_list.sort()
-                    await Notifications.ping_people(message, tag_list, exempt_user=message.author)
-                    
-                    for tag in bonus_reactions.keys():
-                        if tag in tag_list:
-                            await message.add_reaction(bonus_reactions[tag])
+                    all_tags.update(tag_list)
+            tag_list = list(all_tags)
+            await Notifications.ping_people(message, tag_list, exempt_user=message.author)
+            
+            for tag in bonus_reactions.keys():
+                if tag in tag_list:
+                    await message.add_reaction(bonus_reactions[tag])
                     # response = 'Tags for that are `' + '`,`'.join(tag_list) + '`'
                     # await channel.send(response)
 

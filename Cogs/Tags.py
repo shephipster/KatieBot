@@ -28,6 +28,21 @@ class Tags(commands.Cog):
         await ctx.channel.send(message)
         return
     
+    @commands.command(aliases=['updateServer', 'refreshServer'])
+    async def update(self, ctx):
+        """Update the current server fully, adding all users to the User Guild Mapping
+
+        Args:
+            ctx (_type_): _description_
+        """
+        guild = ctx.guild
+        users = guild.members
+        for user in users:
+            if user.bot:
+                continue
+            SQL.Database.addUserGuildMapping(user, guild)
+            
+    
     @commands.command()
     async def addTag(self, ctx, *tags:str):
         """ Adds the tag to your list """

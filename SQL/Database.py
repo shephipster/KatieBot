@@ -29,6 +29,28 @@ async def addChannel(guild: discord.Guild, channel: discord.TextChannel):
         ugm.addRow(user_id = member.id, guild_id = guild.id)
         
     save()
+    
+def addUserGuildMapping(user: discord.user, guild: discord.guild):
+    user_id = user.id
+    guild_id = guild.id
+    ugm = User_Guild_Mappings()
+    ugm.addRow(user_id = user_id, guild_id=guild_id)
+    save()
+    
+def getPingableUsers(guild: discord.guild):
+    from datetime import datetime as dt
+    current_time = dt.now()
+    ugm = User_Guild_Mappings()
+    users = ugm.fetchAvailableUsers(guild.id, current_time)
+    actual_users = []
+    for user in users:
+        actual_users.append(user[1])
+    return actual_users
+
+def updatePingedUsers(users:list, guild: discord.guild):
+    ugm = User_Guild_Mappings()
+    ugm.updatePingedUsers(users, guild.id)
+    save()
 
 async def addGuild(guild: discord.Guild):
     #add the guild

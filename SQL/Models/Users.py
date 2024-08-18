@@ -89,7 +89,18 @@ class Users(Entity):
         return fetched_data
     
     def search(self, **kwargs):
-        pass
+        try:
+            connection = SQL.Connection.connection.cursor()
+            params = ()
+            query = f'SELECT * from Users where '
+            if 'user_id' in kwargs:
+                query = query + "user_id = ?"
+                params = params + (kwargs['user_id'],)
+                                
+            fetched_data = connection.execute(query, params).fetchall()
+            return fetched_data
+        except:
+            return
 
     def set(self, pkey, **kwargs):
         pass

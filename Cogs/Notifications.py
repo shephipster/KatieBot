@@ -18,7 +18,10 @@ class Notifications(commands.Cog):
     async def ping_people(message: discord.Message, tag_list, exempt_user=None):
         # go through each user in the current channel
         users = message.channel.members
-        for user in users:
+        guild = message.channel.guild
+        pingable_users = Database.getPingableUsers(guild = guild)
+        pinged_users = []
+        for user in pingable_users:
             if user == exempt_user:
                 continue
             # fetch their tags
@@ -46,8 +49,11 @@ class Notifications(commands.Cog):
             # if tags match ping tags add set
             if len(matches):
                 ping_string = f'<@{user.id}> for `' + '`,`'.join(matches) + '`'
+                pinged_users.append(user.id)
                 await message.channel.send(ping_string)
-                
+        
+        if pinged_users:
+            Database.updatePingedUsers(pinged_users, guild=guild)
         return
     
     async def check_events(guild: discord.Guild):
