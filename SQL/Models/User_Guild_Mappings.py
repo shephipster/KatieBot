@@ -57,22 +57,7 @@ class User_Guild_Mappings(Entity):
             *users,
             guild
         )
-        connection.execute(query, params)
-        
-        query = f'''
-            SELECT * FROM User_Guild_Mappings
-            WHERE user_id IN ({placeholders})
-            AND guild_id = ?
-        '''
-        params = (
-            *users,
-            guild
-        )
-        results = connection.execute(query, params)
-        for res in results:
-            print(res)
-        return results
-    
+        connection.execute(query, params)    
         
     def convertFromRow(self, values: list):
         return super().convertFromRow(values)

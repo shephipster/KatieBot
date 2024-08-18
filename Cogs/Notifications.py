@@ -28,7 +28,7 @@ class Notifications(commands.Cog):
             blacklist = []
             whitelist = []
             matches = []
-            user_tags = Database.getAllTags(user_id = user.id, guild_id = message.guild.id)
+            user_tags = Database.getAllTags(user_id = user, guild_id = message.guild.id)
             for tag in user_tags:
                 if tag[1]:
                     blacklist.append(tag[0])
@@ -48,8 +48,8 @@ class Notifications(commands.Cog):
                     matches.append(tag)
             # if tags match ping tags add set
             if len(matches):
-                ping_string = f'<@{user.id}> for `' + '`,`'.join(matches) + '`'
-                pinged_users.append(user.id)
+                ping_string = f'<@{user}> for `' + '`,`'.join(matches) + '`'
+                pinged_users.append(user)
                 await message.channel.send(ping_string)
         
         if pinged_users:
