@@ -54,7 +54,12 @@ last_command_caller = None
 bonus_reactions = {
     'misaka_mikoto': str('⚡'),
     'dullahan': str('🎃'),
-    'burger': str('🍔')
+    'burger': str('🍔'),
+    'emilia_(re:zero)': str('🚑'),
+    'yuri_(doki_doki_literature_club)': str('🔪'),
+    'cat': str('🐱'),
+    'cat_girl': str('🐱'),
+    'cat_ears': str('🐱'),
 }
 
 # Declare Bot

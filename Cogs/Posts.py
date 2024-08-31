@@ -44,6 +44,8 @@ class Posts(commands.Cog):
         combo_count = 1
         for tag in tags:
             multiplier = re.search(r'(x\d+|\d+x)', tag)
+            if multiplier >= 5:
+                multiplier = 5
             if multiplier:
                 combo_count = int(re.search(r'\d+', multiplier[0])[0])
             else:
@@ -248,6 +250,8 @@ class Posts(commands.Cog):
         combo_count = 1
         for tag in tags:
             multiplier = re.search(r'(x\d+|\d+x)', tag)
+            if multiplier >= 5:
+                multiplier = 5
             if multiplier:
                 combo_count = int(re.search(r'\d+', multiplier[0])[0])
             else:

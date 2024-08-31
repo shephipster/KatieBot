@@ -22,7 +22,7 @@ class Notifications(commands.Cog):
         pingable_users = Database.getPingableUsers(guild = guild)
         pinged_users = []
         for user in pingable_users:
-            if user == exempt_user:
+            if user == exempt_user.id:
                 continue
             # fetch their tags
             blacklist = []
