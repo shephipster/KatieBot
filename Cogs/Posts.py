@@ -87,7 +87,7 @@ class Posts(commands.Cog):
             safe_exemptions = data[guid]['channels'][cid]['safe_exemptions']
             nsfw_exemptions = data[guid]['channels'][cid]['nsfw_exemptions']
             
-            for tags in getBlacklist(user_id = ctx.author.id, guild_id=guid):
+            for tag in getBlacklist(user_id = ctx.author.id, guild_id=guid):
                 bannedTags.append(tag)
         
             for i in range(combo_count):
@@ -299,7 +299,7 @@ class Posts(commands.Cog):
             safe_exemptions = data[guid]['channels'][cid]['safe_exemptions']
             nsfw_exemptions = data[guid]['channels'][cid]['nsfw_exemptions']
             
-            for tags in getBlacklist(user_id = ctx.author.id, guild_id=guid):
+            for tag in getBlacklist(user_id = ctx.author.id, guild_id=guid):
                 bannedTags.append(tag)
         
             for i in range(combo_count):
