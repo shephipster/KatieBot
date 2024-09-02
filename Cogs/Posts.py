@@ -140,7 +140,7 @@ class Posts(commands.Cog):
         embed_obj.set_image(url=image_url)
 
         
-        embed_msg = await ctx.reply(embed=embed_obj)
+        embed_msg = await ctx.reply(embed=embed_obj, mention_author=False)
         await embed_msg.add_reaction(str('♥'))
 
         await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title, original_caller=ctx.message.author)        
