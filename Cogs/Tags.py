@@ -56,7 +56,7 @@ class Tags(commands.Cog):
             SQL.Database.removeTagFromUser(tag, ctx)
             await ctx.message.channel.send(f'{tag} is gone from your liked tags')
         
-    @commands.command()
+    @commands.command(aliases=['blacklist','block'])
     async def blockTag(self, ctx, *tags:str):
         """ Add the tag to your blacklist """
         for tag in tags:

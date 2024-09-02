@@ -44,10 +44,10 @@ class Posts(commands.Cog):
         combo_count = 1
         for tag in tags:
             multiplier = re.search(r'(x\d+|\d+x)', tag)
-            if multiplier >= 5:
-                multiplier = 5
             if multiplier:
                 combo_count = int(re.search(r'\d+', multiplier[0])[0])
+                if combo_count >= 5:
+                    combo_count = 5
             else:
                 cleaned_tags.append(tag.replace('`', ''))
             
@@ -106,9 +106,12 @@ class Posts(commands.Cog):
 
         await orig_msg.delete()
         tasks = []
+        all_tags = set()
         for rolled_data in rolled_data_set:
             tasks.append(self.send_post(rolled_data, ctx))
+            all_tags.add(x for x in rolled_data['tag_list'])
         await asyncio.gather(*tasks) 
+        await ping_people(ctx, all_tags, ctx.author.id)
     
     async def send_post(self, rolled_data, ctx):
         sources = rolled_data['sources']
@@ -141,10 +144,11 @@ class Posts(commands.Cog):
         await embed_msg.add_reaction(str('♥'))
 
         await self.updateRolledImage(sources=sources, ctx=ctx, embed_msg=embed_msg, image_url=image_url, tag_list=tag_list, isExplicit=is_explicit, title=title, original_caller=ctx.message.author)        
-        await asyncio.sleep(30)
-        await self.delete_without_reactions(embed_msg)
+        await asyncio.sleep(60)
+        deleted = await self.delete_without_reactions(embed_msg)
         
-        embed_msg = await embed_msg.fetch()
+        if not deleted:
+            embed_msg = await embed_msg.fetch()
         
     
     async def delete_without_reactions(self, msg):
@@ -152,9 +156,11 @@ class Posts(commands.Cog):
         delete = True
         for reaction in embed_msg.reactions:
             if reaction.count > 1 or not reaction.me:
-                delete = False                
+                delete = False
+                return False                
         if delete:
             await embed_msg.delete()
+            return True
             
     #Blocking calls
     async def updateRolledImage(self, ctx, sources:list, embed_msg, image_url, tag_list, isExplicit, title=None, original_caller=None):
@@ -191,7 +197,7 @@ class Posts(commands.Cog):
             pass
         else:
             embed_msg = await embed_msg.edit(embed=embed_obj)
-        await ping_people(ctx, tag_list, exempt_user = original_caller)
+        # await ping_people(ctx, tag_list, exempt_user = original_caller)
 
         return embed_msg
     
@@ -250,10 +256,10 @@ class Posts(commands.Cog):
         combo_count = 1
         for tag in tags:
             multiplier = re.search(r'(x\d+|\d+x)', tag)
-            if multiplier >= 5:
-                multiplier = 5
             if multiplier:
                 combo_count = int(re.search(r'\d+', multiplier[0])[0])
+                if combo_count >= 5:
+                    combo_count = 5
             else:
                 cleaned_tags.append(tag.replace('`', ''))
             
