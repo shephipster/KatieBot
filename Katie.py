@@ -111,15 +111,7 @@ async def on_message(message):
         # This causes bot to by-pass the repost filter. Do we care? I don't, and who would notice
         return
 
-    if "fuck you" in message.content.lower():
-        if "kira" in message.content.lower():
-            await channel.send("fuck me yourself, coward")
-        else:
-            await channel.send("fuck them yourself, coward")
-    elif "fuck me" in message.content.lower():
-        await channel.send("that's kinda gross dude")
-    elif "kira" in message.content.lower() and ('sucks' in message.content.lower() or 'blows' in message.content.lower()):
-        await channel.send("Like you're one to talk <:haremonPout:616919335801454595>")
+    profanity_check(message)
 
     if not message.content or message.content[0] != '+':
         if message.attachments:
@@ -154,6 +146,21 @@ async def on_message(message):
     last_command_caller = message.author
     await bot.process_commands(message)
 
+async def profanity_check(message):
+    from random import randint
+    roll = randint(1,10)
+    if roll != 1:
+        return
+    channel = message.channel
+    if "fuck you" in message.content.lower():
+        if "kira" in message.content.lower():
+            await channel.send("fuck me yourself, coward")
+        else:
+            await channel.send("fuck them yourself, coward")
+    elif "fuck me" in message.content.lower():
+        await channel.send("that's kinda gross dude")
+    elif "kira" in message.content.lower() and ('sucks' in message.content.lower() or 'blows' in message.content.lower()):
+        await channel.send("Like you're one to talk <:haremonPout:616919335801454595>")
     
 @bot.event
 async def on_message_edit(before, after):
